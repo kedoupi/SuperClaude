@@ -1,5 +1,14 @@
 # CNB Code Review Patterns and Workflows
 # Configuration for /cnb-cr command implementation
+#
+# MCP Dependencies:
+#   - CNB MCP Server: mcp__cnb__* tools for CNB platform integration
+#   - WeChat Work MCP Server: mcp__wecom__* tools for team notifications
+#
+# Required Permissions:
+#   - CNB platform access and authentication
+#   - WeChat Work webhook configuration
+#   - Local file system access for repository management
 
 CNB_CR_Core:
   Repository_Management:

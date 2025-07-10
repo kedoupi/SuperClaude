@@ -14,6 +14,29 @@
 7. 提交评论到PR
 8. 发送WeChat Work团队通知
 
+## 前置要求
+
+### 必需的MCP服务器
+此命令依赖以下MCP服务器，请确保已正确配置：
+
+1. **CNB MCP服务器** - 用于CNB平台API交互
+   - 功能：获取PR信息、提交评论
+   - 配置：需要CNB平台的访问权限和认证
+
+2. **WeChat Work MCP服务器** - 用于团队通知
+   - 功能：发送评审完成通知
+   - 配置：需要WeChat Work机器人webhook配置
+
+### MCP配置检查
+在使用前，请确认MCP服务器可用：
+```bash
+# 检查CNB MCP是否可用
+/cnb-cr --dry-run [任意PR链接]
+
+# 或者查看MCP状态
+# 确保 mcp__cnb__ 和 mcp__wecom__ 前缀的工具可用
+```
+
 ## 基本用法
 
 ```bash
@@ -147,10 +170,18 @@
 
 ### CNB MCP集成
 - `mcp__cnb__get-pull` - 获取PR详细信息
+- `mcp__cnb__get-repository` - 获取仓库信息和克隆URL
 - `mcp__cnb__create-pull-comment` - 提交评审评论
 
-### WeChat Work集成
+### WeChat Work集成  
 - `mcp__wecom__send_wecom_message` - 发送团队通知
+
+### 故障排除
+如果命令执行失败，请检查：
+1. **CNB MCP认证**：确保有CNB平台访问权限
+2. **WeChat Work配置**：确认webhook地址正确
+3. **网络连接**：确保能访问CNB平台和仓库
+4. **本地存储**：确保 `~/Coding/cnb-cr/repos` 目录可写
 
 ### SuperClaude能力复用
 - `/review` - 核心代码分析能力

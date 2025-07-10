@@ -388,6 +388,10 @@ Professional system design with specifications.
 #### `/cnb-cr` - CNB代码评审工作流
 专门针对CNB平台的端到端代码评审自动化流程。
 
+**⚠️ MCP依赖要求**：
+- **CNB MCP服务器** - 必需，用于CNB平台API交互
+- **WeChat Work MCP服务器** - 必需，用于团队通知
+
 **Command-Specific Flags:**
 - `--persona-qa` - QA专家视角评审
 - `--persona-security` - 安全专家视角评审
