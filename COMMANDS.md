@@ -383,7 +383,35 @@ Professional system design with specifications.
 /design --microservices --event-driven   # Microservices design
 ```
 
-### 🔄 Workflow Commands (4)
+### 🔄 Workflow Commands (5)
+
+#### `/cnb-cr` - CNB代码评审工作流
+专门针对CNB平台的端到端代码评审自动化流程。
+
+**Command-Specific Flags:**
+- `--persona-qa` - QA专家视角评审
+- `--persona-security` - 安全专家视角评审
+- `--persona-performance` - 性能专家视角评审
+- `--persona-frontend` - 前端专家视角评审
+- `--persona-backend` - 后端专家视角评审
+- `--dry-run` - 预览模式，不提交评论
+- `--no-wecom` - 不发送WeChat Work通知
+- `--force-clone` - 强制重新克隆仓库
+- `--interactive` - 交互式确认每个步骤
+
+**Key Features:**
+- **智能PR解析**: 自动解析CNB PR链接获取详细信息
+- **本地仓库管理**: 自动克隆/更新到 `~/Coding/cnb-cr/repos`
+- **多维度分析**: 逻辑、风格、性能、安全、测试覆盖
+- **结构化报告**: 生成专业的CR报告格式
+- **自动化流程**: 一键完成评审、评论、通知全流程
+
+**Examples:**
+```bash
+/cnb-cr https://cnb.tmeoa.com/kuwoFE/gundam/gdv1/-/pulls/57           # 基础代码评审
+/cnb-cr [PR_URL] --persona-security --think-hard --strict             # 安全专家深度评审
+/cnb-cr [PR_URL] --dry-run --interactive                              # 预览交互模式
+```
 
 #### `/spawn` - Specialized Agents
 Spawn focused agents for parallel tasks.

@@ -1,0 +1,247 @@
+# CNB Code Review Patterns and Workflows
+# Configuration for /cnb-cr command implementation
+
+CNB_CR_Core:
+  Repository_Management:
+    base_path: "~/Coding/cnb-cr/repos"
+    clone_strategy: "if_not_exists"
+    update_strategy: "pull_latest"
+    cleanup_policy: "keep_recent_branches"
+    
+  URL_Parsing:
+    pattern: "https://cnb.tmeoa.com/{group}/{repo}/-/pulls/{number}"
+    extract:
+      - group: "URL路径中的组织名"
+      - repo: "仓库名称"  
+      - number: "PR编号"
+      
+  Branch_Management:
+    target_branch: "获取PR的目标分支"
+    source_branch: "获取PR的源分支"
+    diff_strategy: "git diff {target}..{source}"
+
+CNB_CR_Workflow:
+  Step_1_Parse_URL:
+    description: "解析CNB PR链接提取信息"
+    extract_fields:
+      - repo_group
+      - repo_name  
+      - pr_number
+    validation: "确保URL格式正确"
+    
+  Step_2_Get_PR_Info:
+    description: "调用CNB MCP获取PR详细信息"
+    mcp_tool: "mcp__cnb__get-pull"
+    required_params:
+      repo: "{group}/{repo}"
+      number: "{pr_number}"
+    extract_data:
+      - title: "PR标题"
+      - author: "作者信息"
+      - description: "PR描述"
+      - base_branch: "目标分支"
+      - head_branch: "源分支"
+      - changed_files: "变更文件数量"
+      - additions: "新增行数"
+      - deletions: "删除行数"
+      
+  Step_3_Repository_Management:
+    description: "管理本地仓库克隆和更新"
+    local_path: "~/Coding/cnb-cr/repos/{repo_name}"
+    operations:
+      check_exists: 
+        - "检查本地仓库目录是否存在"
+        - "ls ~/Coding/cnb-cr/repos/{repo_name}"
+      if_exists:
+        - "cd ~/Coding/cnb-cr/repos/{repo_name}"
+        - "git fetch origin"
+        - "git checkout {base_branch}"
+        - "git pull origin {base_branch}"
+      if_not_exists:
+        - "mkdir -p ~/Coding/cnb-cr/repos"
+        - "cd ~/Coding/cnb-cr/repos"
+        - "git clone {clone_url} {repo_name}"
+        - "cd {repo_name}"
+        
+  Step_4_Get_PR_Changes:
+    description: "获取PR的具体代码变更"
+    git_operations:
+      fetch_pr: "git fetch origin pull/{pr_number}/head:pr-{pr_number}"
+      checkout_base: "git checkout {base_branch}"
+      get_diff: "git diff {base_branch}..pr-{pr_number}"
+      get_changed_files: "git diff {base_branch}..pr-{pr_number} --name-only"
+      get_stats: "git diff {base_branch}..pr-{pr_number} --stat"
+      
+  Step_5_Code_Analysis:
+    description: "使用SuperClaude能力分析代码变更"
+    analysis_dimensions:
+      logic_check:
+        focus: "潜在bug和逻辑漏洞"
+        tools: ["/review --files {changed_files} --quality"]
+        severity_levels: ["critical", "high", "medium", "low"]
+        
+      style_check:
+        focus: "编码规范和风格一致性"
+        tools: ["/scan --quality --validate"]
+        standards: ["项目现有规范", "语言最佳实践"]
+        
+      readability_check:
+        focus: "代码可读性和可维护性"
+        tools: ["/analyze --code --architecture"]
+        criteria: ["清晰度", "注释完整性", "模块化"]
+        
+      performance_check:
+        focus: "性能影响和优化建议"
+        tools: ["/analyze --profile --persona-performance"]
+        areas: ["算法效率", "资源使用", "瓶颈识别"]
+        
+      test_check:
+        focus: "测试覆盖和质量"
+        tools: ["/test --coverage --validate"]
+        requirements: ["单元测试", "集成测试", "边界测试"]
+        
+  Step_6_Generate_Report:
+    description: "生成结构化的CR报告"
+    report_template: |
+      📋 代码评审报告
+      PR: {title} (#{number})
+      作者: {author}
+      分支: {head_branch} → {base_branch}
+      变更: +{additions}行 -{deletions}行 ({changed_files_count}个文件)
+      
+      🔍 评审结果：
+      ✅ 通过项目: {pass_count}个
+      ⚠️  需要关注: {warning_count}个  
+      ❌ 必须修复: {critical_count}个
+      
+      📝 详细建议：
+      {detailed_suggestions}
+      
+      🎯 总结：{overall_assessment}
+      
+      🔗 PR链接: {pr_url}
+      ⏰ 评审时间: {timestamp}
+      
+    categorization:
+      pass_criteria: "无重大问题，代码质量良好"
+      warning_criteria: "存在可改进点，但不阻塞合并"
+      critical_criteria: "存在严重问题，必须修复后才能合并"
+      
+  Step_7_User_Confirmation:
+    description: "等待用户确认评审结果"
+    display_format: "完整的CR报告"
+    confirmation_prompt: "请确认是否同意此评审结果并提交评论到PR？(y/n)"
+    options:
+      - "y/yes: 确认并提交评论"
+      - "n/no: 取消操作"
+      - "edit: 修改评论内容"
+      
+  Step_8_Submit_Comment:
+    description: "提交评论到CNB PR"
+    condition: "用户确认同意"
+    mcp_tool: "mcp__cnb__create-pull-comment"
+    params:
+      repo: "{group}/{repo}"
+      number: "{pr_number}"
+      body: "{formatted_cr_comment}"
+    comment_format: |
+      ## 🔍 代码评审报告
+      
+      ### 📊 评审摘要
+      - ✅ 通过: {pass_count}项
+      - ⚠️ 关注: {warning_count}项  
+      - ❌ 修复: {critical_count}项
+      
+      ### 📝 详细建议
+      {detailed_feedback}
+      
+      ### 🎯 总体评价
+      {overall_summary}
+      
+      ---
+      *评审时间: {timestamp}*
+      
+  Step_9_WeChat_Notification:
+    description: "发送WeChat Work团队通知"
+    condition: "评论提交成功且未设置--no-wecom"
+    mcp_tool: "mcp__wecom__send_wecom_message"
+    params:
+      message_type: "markdown"
+      content: "{wecom_notification}"
+    notification_template: |
+      🔄 **代码评审完成**
+      
+      📋 **{repo_name}** PR#{number}
+      👤 作者: {author}
+      📝 标题: {title}
+      
+      📊 评审结果: ✅{pass_count} ⚠️{warning_count} ❌{critical_count}
+      
+      🔗 [查看详情]({pr_url})
+      📅 {timestamp}
+
+Review_Quality_Standards:
+  Code_Logic:
+    critical_issues:
+      - "空指针引用"
+      - "数组越界"
+      - "死循环风险"
+      - "资源泄露"
+    high_issues:
+      - "逻辑不一致"
+      - "边界条件未处理"
+      - "异常处理缺失"
+    medium_issues:
+      - "代码重复"
+      - "复杂度过高"
+      - "命名不规范"
+      
+  Security_Check:
+    critical_issues:
+      - "SQL注入风险"
+      - "XSS漏洞"
+      - "身份验证绕过"
+      - "敏感信息泄露"
+    high_issues:
+      - "输入验证缺失"
+      - "权限控制不当"
+      - "加密算法不安全"
+      
+  Performance_Impact:
+    critical_issues:
+      - "数据库N+1查询"
+      - "内存泄露"
+      - "阻塞主线程"
+    high_issues:
+      - "低效算法"
+      - "重复计算"
+      - "缓存缺失"
+
+Error_Handling:
+  Repository_Errors:
+    clone_failed: "仓库克隆失败，请检查网络连接和权限"
+    update_failed: "仓库更新失败，可能存在本地冲突"
+    branch_not_found: "指定分支不存在"
+    
+  API_Errors:
+    pr_not_found: "PR不存在或无访问权限"
+    network_timeout: "网络请求超时，请重试"
+    authentication_failed: "CNB认证失败"
+    
+  Analysis_Errors:
+    no_changes: "PR没有代码变更"
+    file_too_large: "文件过大，跳过分析"
+    binary_file: "二进制文件，跳过分析"
+
+Performance_Optimization:
+  Caching:
+    repo_info: "缓存仓库基本信息"
+    analysis_results: "缓存分析结果避免重复计算"
+    
+  Parallel_Processing:
+    file_analysis: "并行分析多个文件"
+    multiple_checks: "并行执行不同类型检查"
+    
+  Resource_Management:
+    memory_limit: "控制内存使用防止OOM"
+    timeout_control: "设置合理的超时时间"
